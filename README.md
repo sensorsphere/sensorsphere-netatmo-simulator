@@ -4,7 +4,7 @@ Standalone offline Netatmo Energy simulator (development prototype). It does **n
 
 ## UI testing
 
-Open `http://127.0.0.1:8091/` on the Docker host. For a remote workstation use an SSH tunnel: `ssh -L 8091:127.0.0.1:8091 ubuntu@na-01` (or your configured SSH hostname), then open `http://localhost:8091/`. The Compose service is intentionally bound to loopback and has no real Netatmo connection.
+Open `http://127.0.0.1:8091/` on the Docker host. For a remote workstation use an SSH tunnel: `ssh -L 8091:127.0.0.1:8091 ubuntu@na-01` (or your configured SSH hostname), then open `http://localhost:8091/`. The Compose service binds to loopback and to the host Tailscale IP (`100.64.0.8` by default). Override `TAILSCALE_BIND_ADDRESS` if the node IP changes. Access from your tailnet at `http://100.64.0.8:8091/`. Do not expose this unauthenticated development simulator to the public Internet.
 
 The UI can advance simulated time, change thermostat modes, apply manual overrides, inject boiler/relay failures, adjust battery/outdoor temperature, display temperature history and reset the simulation. The virtual clock advances only when requested; there is no real-time scheduler yet. State and history are in memory and reset when the container restarts.
 
