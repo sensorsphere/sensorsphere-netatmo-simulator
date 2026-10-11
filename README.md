@@ -65,3 +65,10 @@ SIM-4: release pipeline, installation script, GHCR publishing, contract/CI cover
 - `GET /sim/api-fault`, `POST /sim/api-fault` with `{mode}`: none, unavailable (503), rate_limit (429 + Retry-After: 60), unauthorized (401). Only `/api/*` calls are affected, not simulator controls or OAuth.
 - `GET /sim/events` lists up to 500 server-side simulation events (configuration, clock, schedule, boiler cycles, API commands). Temperature history remains separate at `/sim/history`.
 - The browser includes scenario presets, API fault controls and a server-side event viewer. All data remains in memory.
+
+## SIM-4 packaging (v0.5.0)
+
+- `./scripts/install.sh install|update|status|logs|stop` runs Docker Compose v2 on the local checkout.
+- `.github/workflows/ci.yml` verifies Node 22 tests, syntax, Compose and Docker build on pushes/PRs.
+- A pushed `v*` Git tag triggers a multi-platform GHCR image publication when a GitHub remote and Actions permissions are configured. The local checkout does not publish automatically.
+- See `docs/NETATMO-API-CONTRACT.md` for current coverage and compatibility gaps.
