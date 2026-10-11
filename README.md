@@ -58,3 +58,10 @@ SIM-4: release pipeline, installation script, GHCR publishing, contract/CI cover
 - `/sim/config`: `insulation` (0.1–5), `heatingPower` (0.1–5), and `windowOpen` (boolean) alter thermal dynamics. The engine remains illustrative, not calibrated to a physical home.
 - UI includes weekly schedule editor, accelerated clock, insulation, heating power and open-window controls.
 - All state is in memory and is reset by container restart. The UI requires a page refresh after redeployment.
+
+## Scenarios and API faults (v0.4.0)
+
+- `GET /sim/scenarios`, `POST /sim/scenario` with `{name}`: normal, cold_snap, open_window, boiler_failure, relay_offline, low_battery, api_unavailable, api_rate_limit. Loading a scenario resets the clock, state and history; events remain available.
+- `GET /sim/api-fault`, `POST /sim/api-fault` with `{mode}`: none, unavailable (503), rate_limit (429 + Retry-After: 60), unauthorized (401). Only `/api/*` calls are affected, not simulator controls or OAuth.
+- `GET /sim/events` lists up to 500 server-side simulation events (configuration, clock, schedule, boiler cycles, API commands). Temperature history remains separate at `/sim/history`.
+- The browser includes scenario presets, API fault controls and a server-side event viewer. All data remains in memory.
