@@ -2,6 +2,12 @@
 
 Standalone offline Netatmo Energy simulator (development prototype). It does **not** contact real Netatmo services or control a physical boiler. The API response shapes are illustrative pending official contract verification.
 
+## UI testing
+
+Open `http://127.0.0.1:8091/` on the Docker host. For a remote workstation use an SSH tunnel: `ssh -L 8091:127.0.0.1:8091 ubuntu@na-01` (or your configured SSH hostname), then open `http://localhost:8091/`. The Compose service is intentionally bound to loopback and has no real Netatmo connection.
+
+The UI can advance simulated time, change thermostat modes, apply manual overrides, inject boiler/relay failures, adjust battery/outdoor temperature, display temperature history and reset the simulation. The virtual clock advances only when requested; there is no real-time scheduler yet. State and history are in memory and reset when the container restarts.
+
 ## Run
 
 Node.js 22+: `npm start`. Tests: `npm test`.
@@ -31,6 +37,7 @@ Simulator administration (`X-Sim-Token` header when configured):
 - `POST /sim/step` with `{"minutes":5}` (1–1440)
 - `POST /sim/config` with any of `outside`, `setpoint`, `relayOnline`, `boilerFault`, `mode`, `battery`
 - `POST /sim/reset` restores initial state
+- `POST /sim/mode` with `{ "mode": "manual", "setpoint": 22, "duration": 3600 }` or schedule/away/hg
 
 ## Roadmap
 
