@@ -50,3 +50,11 @@ SIM-3: web dashboard and scenario editor.
 SIM-4: release pipeline, installation script, GHCR publishing, contract/CI coverage.
 
 **Safety:** Do not expose the development OAuth or admin endpoints publicly. No real heating controls are connected.
+
+## Thermal simulation and schedules (v0.3.0)
+
+- `/sim/schedule` GET/POST: seven daily arrays of ordered `{minute,temp}` periods, beginning at minute 0. Monday is simulated day 1. Default weekday/weekend schedules currently identical.
+- `/sim/clock` GET/POST: `{speed:0|1|10|60|1440}`; speed is virtual minutes per real second, 0 pauses. A timer runs only while the process is alive.
+- `/sim/config`: `insulation` (0.1–5), `heatingPower` (0.1–5), and `windowOpen` (boolean) alter thermal dynamics. The engine remains illustrative, not calibrated to a physical home.
+- UI includes weekly schedule editor, accelerated clock, insulation, heating power and open-window controls.
+- All state is in memory and is reset by container restart. The UI requires a page refresh after redeployment.
