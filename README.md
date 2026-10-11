@@ -1,17 +1,45 @@
-# SensorSphere Netatmo Simulator (SIM-1 foundation)
+# SensorSphere Netatmo Simulator
 
-Independent offline mock for a classic Netatmo thermostat, relay and boiler. No real Netatmo access.
+Standalone offline Netatmo Energy simulator (development prototype). It does **not** contact real Netatmo services or control a physical boiler. The API response shapes are illustrative pending official contract verification.
 
-## Start
-`docker compose up --build -d` or `npm start` (Node.js 22+).
+## Run
 
-## Routes
-- `GET /health`, `GET /api/state`, `GET /api/history`
-- `GET /api/homesdata`, `GET /api/homestatus` — illustrative response shapes, **not yet contract-certified**.
-- `POST /sim/step` with `{"minutes":5}` advances simulated time.
-- `POST /sim/config` with `{"setpoint":21,"outside":8,"relayOnline":true,"boilerFault":false,"mode":"schedule"}`.
+Node.js 22+: `npm start`. Tests: `npm test`.
 
-Set `SIM_ADMIN_TOKEN` and pass `X-Sim-Token` for write endpoints when exposed beyond localhost.
+Docker: `docker compose up --build -d` (bound to `127.0.0.1:8091` by default).
+
+## Configuration
+
+- `PORT`: HTTP port (default 8091)
+- `SIM_CLIENT_ID`: OAuth client ID (default `sim-client`)
+- `SIM_CLIENT_SECRET`: OAuth client secret (default `sim-secret`, development only)
+- `SIM_ADMIN_TOKEN`: optional admin token; **set it before exposing the simulator to any untrusted network**
+
+OAuth `GET /oauth2/authorize` with `response_type=code`, `client_id`, `redirect_uri`, `scope` and optional `state`; `POST /oauth2/token` supports `authorization_code` and `refresh_token` grants. Access tokens last one hour. The simulator does not present a login/consent UI and must never be used as a real identity provider.
+
+Energy mock endpoints (Bearer access token):
+
+- `GET /api/homesdata` — requires `read_thermostat`
+- `GET /api/homestatus?home_id=sim-home-01` — requires `read_thermostat`
+- `POST /api/setroomthermpoint` with `home_id`, `room_id`, `mode=manual`, `temp`, `duration` (seconds) — requires `write_thermostat`
+- `POST /api/setthermmode` with `home_id`, `mode` (`schedule`, `away`, `hg`) — requires `write_thermostat`
+
+Simulator administration (`X-Sim-Token` header when configured):
+
+- `GET /health`
+- `GET /sim/state`, `GET /sim/history`
+- `POST /sim/step` with `{"minutes":5}` (1–1440)
+- `POST /sim/config` with any of `outside`, `setpoint`, `relayOnline`, `boilerFault`, `mode`, `battery`
+- `POST /sim/reset` restores initial state
 
 ## Roadmap
-SIM-1: OAuth simulator, endpoint contracts and tests. SIM-2: thermal model, schedule and command lifecycle. SIM-3: web UI and scenarios. SIM-4: CI, release packaging and contract validation. Current implementation is an initial SIM-1 scaffold, **not** a full Netatmo API emulator.
+
+SIM-1 foundation: OAuth mock, initial endpoints, read/write scope separation and automated smoke tests. Remaining: official API contract fixtures, validation of query/form parameter conventions, richer OAuth failure injection.
+
+SIM-2: detailed thermal physics, schedules, asynchronous commands, fault scenarios, history retrieval.
+
+SIM-3: web dashboard and scenario editor.
+
+SIM-4: release pipeline, installation script, GHCR publishing, contract/CI coverage.
+
+**Safety:** Do not expose the development OAuth or admin endpoints publicly. No real heating controls are connected.
