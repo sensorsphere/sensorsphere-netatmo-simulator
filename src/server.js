@@ -3,7 +3,9 @@ import {randomBytes, randomUUID} from 'node:crypto';
 import {pathToFileURL,fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import pathModule from 'node:path';
-const HOME='sim-home-01', ROOM='sim-room-01', THERM='sim-thermostat-01', RELAY='sim-relay-01';
+const simulatorId = process.env.SIM_INSTANCE_ID || '01';
+if (!/^[a-zA-Z0-9_-]{1,32}$/.test(simulatorId)) throw new Error('SIM_INSTANCE_ID must be 1..32 letters, digits, underscores or hyphens');
+const HOME=`sim-home-${simulatorId}`, ROOM=`sim-room-${simulatorId}`, THERM=`sim-thermostat-${simulatorId}`, RELAY=`sim-relay-${simulatorId}`;
 const initial=()=>({temperature:18.5,outside:8,setpoint:21,mode:'schedule',relayOnline:true,boilerFault:false,minutes:0,heating:false,heatMinutes:0,overrideUntil:null,battery:85,insulation:1,heatingPower:1,windowOpen:false});
 export function createApp({adminToken=process.env.SIM_ADMIN_TOKEN||'',clientId=process.env.SIM_CLIENT_ID||'sim-client',clientSecret=process.env.SIM_CLIENT_SECRET||'sim-secret'}={}){
  let state=initial(), history=[], codes=new Map(), tokens=new Map(), schedules=[{id:'sim-schedule-01',name:'Default'}];
@@ -22,7 +24,7 @@ export function createApp({adminToken=process.env.SIM_ADMIN_TOKEN||'',clientId=p
  function requireScope(req,res,scope){const entry=auth(req);if(!entry){failure(res,401,'invalid_token');return false;}if(!entry.scopes.includes(scope)){failure(res,403,'insufficient_scope');return false;}return true;}
  async function payload(req){let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>8192)throw Error('request_too_large');}const type=req.headers['content-type']||'';return type.includes('application/x-www-form-urlencoded')?Object.fromEntries(new URLSearchParams(raw)):raw?JSON.parse(raw):{};}
  const handler=async(req,res)=>{try{const url=new URL(req.url,'http://localhost');const path=url.pathname, method=req.method;
- if(method==='GET'&&(path==='/'||['/ui/style.css','/ui/app.js'].includes(path))){const file=path==='/'?'index.html':path.slice(4);const content=await readFile(pathModule.join(pathModule.dirname(fileURLToPath(import.meta.url)),'../public',file));res.writeHead(200,{'content-type':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});return res.end(content);}
+ if(method==='GET'&&(path==='/'||['/ui/style.css','/ui/app.js','/favicon.svg'].includes(path))){const file=path==='/'?'index.html':path==='/favicon.svg'?'favicon.svg':path.slice(4);const content=await readFile(pathModule.join(pathModule.dirname(fileURLToPath(import.meta.url)),'../public',file));res.writeHead(200,{'content-type':file.endsWith('.css')?'text/css; charset=utf-8':file.endsWith('.js')?'text/javascript; charset=utf-8':file.endsWith('.svg')?'image/svg+xml':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});return res.end(content);}
 
  if(apiFailure(req,res))return;
  if(method==='GET'&&path==='/health')return reply(res,200,{status:'ok',simulator:true});

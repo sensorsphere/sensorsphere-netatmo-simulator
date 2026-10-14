@@ -8,4 +8,7 @@ services:
       - "${TAILSCALE_BIND_ADDRESS:-100.64.0.8}:${WEB_PORT:-8091}:8091"
     environment:
       PORT: "8091"
+      SIM_INSTANCE_ID: "${SIM_INSTANCE_ID:-01}"
+      SIM_CLIENT_ID: "${SIM_CLIENT_ID:-sim-client}"
+      SIM_CLIENT_SECRET: "${SIM_CLIENT_SECRET:-sim-secret}"
       SIM_ADMIN_TOKEN: "${SIM_ADMIN_TOKEN:-}"
