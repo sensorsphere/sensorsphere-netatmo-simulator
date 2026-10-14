@@ -72,3 +72,9 @@ SIM-4: release pipeline, installation script, GHCR publishing, contract/CI cover
 - `.github/workflows/ci.yml` verifies Node 22 tests, syntax, Compose and Docker build on pushes/PRs.
 - A pushed `v*` Git tag triggers a multi-platform GHCR image publication when a GitHub remote and Actions permissions are configured. The local checkout does not publish automatically.
 - See `docs/NETATMO-API-CONTRACT.md` for current coverage and compatibility gaps.
+
+## Multiple independent simulator instances
+
+`SIM_INSTANCE_ID` (default `01`) controls the Netatmo identifiers returned by `/api/homesdata` and `/api/homestatus`: `sim-home-<id>`, `sim-room-<id>`, `sim-thermostat-<id>`, and `sim-relay-<id>`. Only letters, numbers, `_`, `-` (1–32 characters) are accepted. `SIM_CLIENT_ID` and `SIM_CLIENT_SECRET` are also passed through Compose. Each simulator needs a separate Compose project name, web port, and optional OAuth credentials; never reuse identifiers between instances.
+
+For example, after the image is built, start a second instance with `COMPOSE_PROJECT_NAME=netatmo-sim-02 SIM_INSTANCE_ID=02 WEB_PORT=8092 SIM_CLIENT_ID=sim-client-02 SIM_CLIENT_SECRET=<unique-secret> ./scripts/install.sh install`. The Tailscale bind address stays the same, but the port differs. This creates an independent in-memory simulation; restarting an instance resets its OAuth codes/tokens and thermal state. The favicon is available at `/favicon.svg`.
