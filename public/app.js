@@ -12,5 +12,6 @@ setInterval(()=>{if(Number($('speed').value)>0&&document.visibilityState==='visi
 
 request('/sim/identity').then(identity=>{
   $('instance-heading').textContent='SIM-'+identity.instanceId+' / HOME '+identity.instanceId;
+  document.title='Netatmo Simulator · SIM-'+identity.instanceId+' · HOME '+identity.instanceId;
   $('instance-details').textContent='SIM_INSTANCE_ID: '+identity.instanceId+' · Home: '+identity.homeId+' · Room: '+identity.roomId+' · Thermostat: '+identity.thermostatId+' · Relay: '+identity.relayId;
 }).catch(e=>{$('instance-details').textContent='Instance identity unavailable: '+e.message;});

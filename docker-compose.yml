@@ -1,13 +1,13 @@
 services:
   netatmo-simulator:
     build: .
-    image: sensorsphere-netatmo-simulator:0.5.0-dev
+    image: sensorsphere-netatmo-simulator:${SIM_VERSION:-latest}
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${WEB_PORT:-8091}:8091"
-      - "${TAILSCALE_BIND_ADDRESS:-100.64.0.8}:${WEB_PORT:-8091}:8091"
+      - "127.0.0.1:${WEB_PORT:-8090}:3000"
+      - "${WEB_BIND_ADDRESS:-100.64.0.8}:${WEB_PORT:-8090}:3000"
     environment:
-      PORT: "8091"
+      PORT: "3000"
       SIM_INSTANCE_ID: "${SIM_INSTANCE_ID:-01}"
       SIM_CLIENT_ID: "${SIM_CLIENT_ID:-sim-client}"
       SIM_CLIENT_SECRET: "${SIM_CLIENT_SECRET:-sim-secret}"

@@ -4,7 +4,7 @@ Standalone offline Netatmo Energy simulator (development prototype). It does **n
 
 ## UI testing
 
-Open `http://127.0.0.1:8091/` on the Docker host. For a remote workstation use an SSH tunnel: `ssh -L 8091:127.0.0.1:8091 ubuntu@na-01` (or your configured SSH hostname), then open `http://localhost:8091/`. The Compose service binds to loopback and to the host Tailscale IP (`100.64.0.8` by default). Override `TAILSCALE_BIND_ADDRESS` if the node IP changes. Access from your tailnet at `http://100.64.0.8:8091/`. Do not expose this unauthenticated development simulator to the public Internet.
+Open `http://127.0.0.1:8090/` on the Docker host. For a remote workstation use an SSH tunnel: `ssh -L 8090:127.0.0.1:8090 ubuntu@na-01` (or your configured SSH hostname), then open `http://localhost:8090/`. The Compose service binds to loopback and to the host Tailscale IP (`100.64.0.8` by default). Override `WEB_BIND_ADDRESS` if the node IP changes. Access from your tailnet at `http://100.64.0.8:8090/`. Do not expose this unauthenticated development simulator to the public Internet.
 
 The UI can advance simulated time, change thermostat modes, apply manual overrides, inject boiler/relay failures, adjust battery/outdoor temperature, display temperature history and reset the simulation. The virtual clock advances only when requested; there is no real-time scheduler yet. State and history are in memory and reset when the container restarts.
 
@@ -12,11 +12,11 @@ The UI can advance simulated time, change thermostat modes, apply manual overrid
 
 Node.js 22+: `npm start`. Tests: `npm test`.
 
-Docker: `docker compose up --build -d` (bound to `127.0.0.1:8091` by default).
+Docker: `docker compose up --build -d` (bound to `127.0.0.1:8090` by default).
 
 ## Configuration
 
-- `PORT`: HTTP port (default 8091)
+- `PORT`: HTTP port (default 3000)
 - `SIM_CLIENT_ID`: OAuth client ID (default `sim-client`)
 - `SIM_CLIENT_SECRET`: OAuth client secret (default `sim-secret`, development only)
 - `SIM_ADMIN_TOKEN`: optional admin token; **set it before exposing the simulator to any untrusted network**
@@ -78,3 +78,22 @@ SIM-4: release pipeline, installation script, GHCR publishing, contract/CI cover
 `SIM_INSTANCE_ID` (default `01`) controls the Netatmo identifiers returned by `/api/homesdata` and `/api/homestatus`: `sim-home-<id>`, `sim-room-<id>`, `sim-thermostat-<id>`, and `sim-relay-<id>`. Only letters, numbers, `_`, `-` (1–32 characters) are accepted. `SIM_CLIENT_ID` and `SIM_CLIENT_SECRET` are also passed through Compose. Each simulator needs a separate Compose project name, web port, and optional OAuth credentials; never reuse identifiers between instances.
 
 For example, after the image is built, start a second instance with `COMPOSE_PROJECT_NAME=netatmo-sim-02 SIM_INSTANCE_ID=02 WEB_PORT=8092 SIM_CLIENT_ID=sim-client-02 SIM_CLIENT_SECRET=<unique-secret> ./scripts/install.sh install`. The Tailscale bind address stays the same, but the port differs. This creates an independent in-memory simulation; restarting an instance resets its OAuth codes/tokens and thermal state. The favicon is available at `/favicon.svg`.
+
+## Configuration and versioning (v0.5.1)
+
+The container listens on TCP port **3000**. Docker Compose publishes host port
+`WEB_PORT` (default **8090**) on `127.0.0.1` and `WEB_BIND_ADDRESS`
+(default **100.64.0.8**). The image tag defaults to `latest` and can be
+overridden with `SIM_VERSION`. `SIM_INSTANCE_ID` (default `01`) determines
+the Home/Room/Thermostat/Relay identifiers and the browser tab title.
+
+For existing deployments, rename `TAILSCALE_BIND_ADDRESS` to
+`WEB_BIND_ADDRESS` in the instance-specific environment file before updating.
+Keep `WEB_PORT=8091` or `WEB_PORT=8092` as appropriate to preserve existing
+host URLs. Compose project names must remain distinct. Updating/recreating
+a simulator resets its in-memory state and OAuth tokens.
+
+Starting with v0.5.1, increment the package version for every change:
+PATCH for compatible fixes/configuration, MINOR for backwards-compatible
+features, MAJOR for breaking changes. Update the UI version alongside
+`package.json`, test, then commit the change.

@@ -38,4 +38,4 @@ export function createApp({adminToken=process.env.SIM_ADMIN_TOKEN||'',clientId=p
  return failure(res,404,'not_found');}catch(e){return failure(res,400,e.message);}};
  return {handler,getState:snapshot,advance};
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const port=Number(process.env.PORT||8091);http.createServer(createApp().handler).listen(port,'0.0.0.0',()=>console.log(`Netatmo simulator listening on ${port}`));}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){const port=Number(process.env.PORT||3000);http.createServer(createApp().handler).listen(port,'0.0.0.0',()=>console.log(`Netatmo simulator listening on ${port}`));}
