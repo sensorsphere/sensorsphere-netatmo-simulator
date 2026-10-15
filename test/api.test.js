@@ -31,3 +31,5 @@ test('Integration diagnostics distinguish simulator, OAuth and unverified Sensor
     assert.equal(status.netatmoApi.faultMode,'none');
   } finally { await new Promise(resolve=>server.close(resolve)); }
 });
+
+test('OAuth errors distinguish invalid client and malformed authorization',async()=>fixture(async base=>{const url=new URL(base+'/oauth2/authorize');url.searchParams.set('client_id','wrong');url.searchParams.set('response_type','code');url.searchParams.set('redirect_uri','https://example.org/callback');const invalid=await fetch(url);assert.equal(invalid.status,401);assert.deepEqual(await invalid.json(),{error:'invalid_client',error_description:'Unknown OAuth client ID'});url.searchParams.set('client_id','sim-client');url.searchParams.set('response_type','token');const malformed=await fetch(url);assert.equal(malformed.status,400);assert.equal((await malformed.json()).error,'unsupported_response_type');}));
