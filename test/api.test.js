@@ -15,3 +15,19 @@ test('Clock starts, rejects invalid speeds and pauses',async()=>fixture(async ba
 test('Scenario presets reset state, change environment and generate events',async()=>fixture(async base=>{const headers={'content-type':'application/json','x-sim-token':'admin'};const post=(path,body)=>fetch(base+path,{method:'POST',headers,body:JSON.stringify(body)});assert.equal((await post('/sim/scenario',{name:'invalid'})).status,400);await post('/sim/step',{minutes:10});const r=await post('/sim/scenario',{name:'cold_snap'});assert.equal(r.status,200);const state=await r.json();assert.equal(state.minutes,0);assert.equal(state.outside,-15);const events=await (await fetch(base+'/sim/events',{headers})).json();assert.ok(events.events.some(e=>e.type==='scenario'));const window=await (await post('/sim/scenario',{name:'open_window'})).json();assert.equal(window.windowOpen,true);const boiler=await (await post('/sim/scenario',{name:'boiler_failure'})).json();assert.equal(boiler.boilerFault,true);}));
 test('API fault injection affects only Netatmo endpoints and can recover',async()=>fixture(async base=>{const headers={'content-type':'application/json','x-sim-token':'admin'};const post=(path,body)=>fetch(base+path,{method:'POST',headers,body:JSON.stringify(body)});const token=await oauth(base);const auth={authorization:'Bearer '+token.access_token};for(const [mode,status] of [['unavailable',503],['rate_limit',429],['unauthorized',401]]){assert.equal((await post('/sim/api-fault',{mode})).status,200);const r=await fetch(base+'/api/homesdata',{headers:auth});assert.equal(r.status,status);if(mode==='rate_limit')assert.equal(r.headers.get('retry-after'),'60');assert.equal((await fetch(base+'/sim/state',{headers})).status,200);}assert.equal((await post('/sim/api-fault',{mode:'bad'})).status,400);await post('/sim/api-fault',{mode:'none'});assert.equal((await fetch(base+'/api/homesdata',{headers:auth})).status,200);const metrics=await (await fetch(base+'/sim/api-fault',{headers})).json();assert.ok(metrics.requests>=4);}));
 test('Boiler transitions appear in server-side events',async()=>fixture(async base=>{const headers={'content-type':'application/json','x-sim-token':'admin'};await fetch(base+'/sim/config',{method:'POST',headers,body:JSON.stringify({temperature:14})});await fetch(base+'/sim/step',{method:'POST',headers,body:JSON.stringify({minutes:5})});const events=await (await fetch(base+'/sim/events',{headers})).json();assert.ok(events.events.some(e=>e.type==='boiler'&&e.message==='Boiler ON'));}));
+
+test('Integration diagnostics distinguish simulator, OAuth and unverified SensorSphere status', async () => {
+  const {createApp} = await import('../src/server.js');
+  const server = (await import('node:http')).createServer(createApp().handler);
+  await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/sim/integration-status`);
+    assert.equal(response.status,200);
+    const status = await response.json();
+    assert.equal(status.simulatorApi,'reachable');
+    assert.equal(status.oauth.activeAccessTokens,0);
+    assert.equal(status.oauth.refreshTokens,0);
+    assert.equal(status.sensorSphere.status,'unknown');
+    assert.equal(status.netatmoApi.faultMode,'none');
+  } finally { await new Promise(resolve=>server.close(resolve)); }
+});
