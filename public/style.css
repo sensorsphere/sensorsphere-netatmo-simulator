@@ -8,3 +8,5 @@
 
 /* Language selection */
 #ui-language{background:#192b41;color:#e5eef8;border:1px solid #3a5068;border-radius:6px;padding:6px 9px} .language-label{font-size:12px;color:#aebdd1;margin-right:5px}
+
+.clock-status{display:inline-block;border:1px solid #667283;padding:9px 13px;border-radius:8px;color:#e7bf6f;font-weight:bold}.clock-status[data-running="true"]{color:#69d9a7;border-color:#39725f}
