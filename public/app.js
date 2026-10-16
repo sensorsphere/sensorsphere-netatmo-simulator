@@ -27,10 +27,89 @@ async function action(name,fn){try{$('error').hidden=true;await fn();await refre
 $('refresh').onclick=()=>action('State refreshed',async()=>{});$('reset').onclick=()=>{if(confirm('Reset simulated thermostat and history?'))action('Simulation reset',()=>request('/sim/reset','POST',{}));};$('advance').onclick=()=>action('Advanced '+$('step').value+' minutes',()=>request('/sim/step','POST',{minutes:Number($('step').value)}));document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>action('Advanced '+b.dataset.step+' minutes',()=>request('/sim/step','POST',{minutes:Number(b.dataset.step)})));
 $('target').oninput=()=>$('target-label').textContent=fmt($('target').value)+' °C';$('indoor-input').oninput=()=>$('indoor-label').textContent=fmt($('indoor-input').value)+' °C';$('outside-input').oninput=()=>$('outside-label').textContent=$('outside-input').value+' °C';$('insulation').oninput=()=>$('insulation-label').textContent=fmt($('insulation').value)+'×';$('power').oninput=()=>$('power-label').textContent=fmt($('power').value)+'×';$('battery').oninput=()=>$('battery-label').textContent=$('battery').value+'%';$('mode').onchange=()=>$('manual-fields').hidden=$('mode').value!=='manual';
 $('apply').onclick=()=>action('Thermostat command',async()=>{const mode=$('mode').value;if(mode==='manual'){await request('/sim/mode','POST',{mode:'manual',setpoint:Number($('target').value),duration:Number($('duration').value)});}else await request('/sim/mode','POST',{mode});});$('indoor-apply').onclick=()=>action('Indoor temperature set',()=>request('/sim/config','POST',{temperature:Number($('indoor-input').value)}));$('weather').onclick=()=>action('Outdoor temperature updated',()=>request('/sim/config','POST',{outside:Number($('outside-input').value)}));$('fault-apply').onclick=()=>action('Fault scenario updated',()=>request('/sim/config','POST',{relayOnline:$('relay').checked,boilerFault:$('fault').checked,windowOpen:$('window').checked,insulation:Number($('insulation').value),heatingPower:Number($('power').value),battery:Number($('battery').value)}));$('clock-apply').onclick=()=>action('Clock speed updated',()=>request('/sim/clock','POST',{speed:Number($('speed').value)}));function showSchedule(){if(weekly)$('schedule-json').value=weekly[Number($('schedule-day').value)].map(p=>`${String(Math.floor(p.minute/60)).padStart(2,'0')}:${String(p.minute%60).padStart(2,'0')}=${p.temp}`).join('\n');}$('schedule-day').onchange=showSchedule;$('schedule-save').onclick=()=>action('Weekly schedule saved',async()=>{const day=Number($('schedule-day').value),entries=$('schedule-json').value.trim().split(/\n+/).map(line=>{const m=/^(\d{1,2}):(\d{2})\s*=\s*(\d+(?:\.\d+)?)$/.exec(line.trim());if(!m)throw Error('Expected HH:MM=temperature');return {minute:Number(m[1])*60+Number(m[2]),temp:Number(m[3])};});const days=weekly.map(d=>d.map(e=>({...e})));days[day]=entries;await request('/sim/schedule','POST',{days});});$('scenario-apply').onclick=()=>{if(confirm('Load scenario and reset the current simulation?'))action('Scenario loaded',()=>request('/sim/scenario','POST',{name:$('scenario').value}));};$('api-fault-apply').onclick=()=>action('API fault updated',()=>request('/sim/api-fault','POST',{mode:$('api-fault').value}));$('clear-log').onclick=()=>$('log').replaceChildren();
-setInterval(()=>{if(Number($('speed').value)>0&&document.visibilityState==='visible')refresh().catch(e=>log('Refresh: '+e.message));},3000);refresh().then(()=>log('Simulator UI ready')).catch(e=>{log('Connection failed: '+e.message);$('error').hidden=false;$('error').textContent='Cannot connect: '+e.message;setStatus('sim-api-status','Unavailable','error');$('api-status').textContent='● Simulator API: Unavailable';});
+setInterval(()=>{if(Number($('speed').value)>0&&document.visibilityState==='visible')refresh().catch(e=>log('Refresh: '+e.message));},3000);
+setInterval(()=>{if(document.visibilityState==='visible'&&Number($('speed').value)===0)refreshIntegrationStatus().catch(()=>{});},3000);refresh().then(()=>log('Simulator UI ready')).catch(e=>{log('Connection failed: '+e.message);$('error').hidden=false;$('error').textContent='Cannot connect: '+e.message;setStatus('sim-api-status','Unavailable','error');$('api-status').textContent='● Simulator API: Unavailable';});
 
 request('/sim/identity').then(identity=>{
   $('instance-heading').textContent='SIM-'+identity.instanceId+' / HOME '+identity.instanceId;
   document.title='Netatmo Simulator · SIM-'+identity.instanceId+' · HOME '+identity.instanceId;
   $('instance-details').textContent='SIM_INSTANCE_ID: '+identity.instanceId+' · Home: '+identity.homeId+' · Room: '+identity.roomId+' · Thermostat: '+identity.thermostatId+' · Relay: '+identity.relayId;
 }).catch(e=>{$('instance-details').textContent='Instance identity unavailable: '+e.message;});
+
+// UI localization: never store credentials; only the display preference is persisted.
+const localeKey='netatmo.sim.ui.language';
+const translations={
+'● SIMULATION ONLY':'● SIMULATION UNIQUEMENT','Heating control center':'Centre de contrôle du chauffage',
+'Loading instance identity…':'Chargement de l’identité…','Thermostat Intelligent · Relay · Boiler — virtual environment':'Thermostat intelligent · Relais · Chaudière — environnement virtuel',
+'↻ Refresh':'↻ Actualiser','Reset simulation':'Réinitialiser la simulation','Connectivity & integration':'Connectivité et intégration',
+'Simulator-local diagnostics · no SensorSphere credentials exposed':'Diagnostic local au simulateur · aucun identifiant SensorSphere exposé',
+'Simulator API':'API du simulateur','Browser ↔ simulator backend':'Navigateur ↔ serveur du simulateur',
+'Netatmo API emulator':'Émulateur API Netatmo','OAuth activity':'Activité OAuth','SensorSphere integration':'Intégration SensorSphere',
+'Configure and check in SensorSphere Administration → Netatmo Connections':'Configurer et contrôler dans SensorSphere Administration → Connexions Netatmo',
+'OAuth tokens indicate API clients have authenticated, not necessarily that SensorSphere has a configured, active connection. This simulator cannot verify SensorSphere registration.':'Les jetons OAuth prouvent une authentification auprès du simulateur, pas nécessairement une connexion SensorSphere active. Le simulateur ne peut pas vérifier son enregistrement.',
+'INDOOR TEMPERATURE':'TEMPÉRATURE INTÉRIEURE','TARGET TEMPERATURE':'TEMPÉRATURE DE CONSIGNE',
+'OUTDOOR TEMPERATURE':'TEMPÉRATURE EXTÉRIEURE','BOILER STATUS':'ÉTAT DE LA CHAUDIÈRE',
+'Living room':'Salon','Weather simulation':'Simulation météo','Temperature history':'Historique des températures',
+'Simulated indoor temperature and target':'Température intérieure simulée et consigne','Measured':'Mesurée','Target':'Consigne',
+'Thermostat control':'Commande du thermostat','Apply commands to the simulated heating system':'Appliquer des commandes au chauffage simulé',
+'Heating mode':'Mode de chauffage','Scheduled program':'Programme','Manual override':'Forçage manuel','Away':'Absent','Frost protection':'Hors gel',
+'Setpoint':'Consigne','Override duration':'Durée du forçage','30 minutes':'30 minutes','1 hour':'1 heure','2 hours':'2 heures','4 hours':'4 heures',
+'Apply thermostat command':'Appliquer la commande','Commands affect only the virtual boiler.':'Les commandes agissent uniquement sur la chaudière virtuelle.',
+'Simulation engine':'Moteur de simulation','Time increment':'Incrément de temps','6 hours':'6 heures','24 hours':'24 heures',
+'▶ Advance simulation':'▶ Avancer la simulation','Auto clock speed':'Vitesse de l’horloge automatique','Paused':'En pause',
+'Apply clock speed':'Appliquer la vitesse','Indoor temperature':'Température intérieure','Set indoor temperature':'Définir la température intérieure',
+'Outside temperature':'Température extérieure','Update outdoor temperature':'Modifier la température extérieure',
+'Fault injection':'Injection de pannes','Test failure and recovery scenarios':'Tester les pannes et leur rétablissement',
+'Window open':'Fenêtre ouverte','Insulation':'Isolation','Heating power':'Puissance de chauffage',
+'Relay online':'Relais connecté','Boiler failure':'Panne chaudière','Battery level':'Niveau de batterie',
+'Apply fault scenario':'Appliquer le scénario de panne','Scenario presets':'Scénarios prédéfinis',
+'Reset the simulated home and load a reproducible test situation':'Réinitialiser la maison et charger une situation reproductible',
+'Scenario':'Scénario','Normal operation':'Fonctionnement normal','Cold snap':'Vague de froid','Open window':'Fenêtre ouverte',
+'Relay disconnected':'Relais déconnecté','Low battery':'Batterie faible','API unavailable (503)':'API indisponible (503)',
+'API rate limited (429)':'API limitée (429)','Load scenario':'Charger le scénario','API response simulation':'Simulation des réponses API',
+'Normal':'Normal','503 Service unavailable':'503 Service indisponible','429 Rate limited':'429 Limite de requêtes',
+'401 Unauthorized':'401 Non autorisé','Apply API fault':'Appliquer la panne API',
+'Fault injection affects /api/* endpoints, not /sim/* controls.':'Les pannes affectent /api/*, pas les commandes /sim/*.',
+'Weekly schedule':'Programme hebdomadaire','Seven days · one temperature profile per day · virtual day 1 = Monday':'Sept jours · un profil de température par jour · jour virtuel 1 = lundi',
+'Day':'Jour','Monday':'Lundi','Tuesday':'Mardi','Wednesday':'Mercredi','Thursday':'Jeudi',
+'Friday':'Vendredi','Saturday':'Samedi','Sunday':'Dimanche','Periods (HH:MM=°C, one per line)':'Périodes (HH:MM=°C, une par ligne)',
+'Save day schedule':'Enregistrer le programme','Event log':'Journal des événements',
+'Local UI activity and API responses':'Activité locale et réponses API','Clear':'Effacer',
+'Simulator events':'Événements du simulateur',
+'SensorSphere Netatmo Simulator · Offline test environment · No physical heating connection':'Simulateur Netatmo SensorSphere · Environnement de test isolé · Aucun chauffage réel connecté',
+'Connected':'Connecté','Ready':'Prêt','Active access tokens':'Jetons d’accès actifs',
+'No active access tokens':'Aucun jeton d’accès actif','Authorization pending':'Autorisation en attente',
+'Not verifiable here':'Non vérifiable ici','Unavailable':'Indisponible','Error':'Erreur',
+'Checking…':'Vérification…','Heating duration:':'Durée de chauffe :','Fault mode:':'Mode de panne :','API requests:':'Requêtes API :',
+'Access:':'Accès :','Refresh:':'Renouvellement :','Pending codes:':'Codes en attente :'
+};
+const originalText=new WeakMap();
+function localize(){
+ const lang=$('ui-language').value;
+ document.documentElement.lang=lang;
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ let node;
+ while((node=walker.nextNode())){
+  if(node.parentElement?.closest('#log,#sim-events,#chart,#instance-details'))continue;
+  if(!originalText.has(node))originalText.set(node,node.textContent);
+  const original=originalText.get(node);
+  const trimmed=original.trim();
+  if(!trimmed||!translations[trimmed])continue;
+  node.textContent=original.replace(trimmed,lang==='fr'?translations[trimmed]:trimmed);
+ }
+ for(const id of ['sim-api-status','netatmo-api-status','oauth-status','sensorsphere-status']){
+  const el=$(id);if(!el)continue;
+  if(!el.dataset.sourceEn||el.dataset.lang!==lang){
+   const en=Object.entries(translations).find(([,fr])=>fr===el.textContent)?.[0]||el.textContent;
+   el.dataset.sourceEn=en;
+  }
+  el.textContent=lang==='fr'?(translations[el.dataset.sourceEn]||el.dataset.sourceEn):el.dataset.sourceEn;
+  el.dataset.lang=lang;
+ }
+}
+const selectedLanguage=localStorage.getItem(localeKey);
+$('ui-language').value=selectedLanguage==='fr'?'fr':'en';
+$('ui-language').addEventListener('change',()=>{localStorage.setItem(localeKey,$('ui-language').value);localize();});
+const setStatusBase=setStatus;
+setStatus=function(id,label,severity){setStatusBase(id,label,severity);const element=$(id);element.dataset.sourceEn=label;element.dataset.lang='en';localize();};
+localize();
