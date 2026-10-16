@@ -1,11 +1,12 @@
 {
   "name": "sensorsphere-netatmo-simulator",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "check:assets": "node scripts/check-assets.js"
   },
   "engines": {
     "node": ">=22"

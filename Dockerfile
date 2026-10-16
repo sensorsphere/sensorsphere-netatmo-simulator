@@ -3,6 +3,8 @@ WORKDIR /app
 COPY package.json ./
 COPY src ./src
 COPY public ./public
+COPY scripts/check-assets.js ./scripts/check-assets.js
+RUN node scripts/check-assets.js
 RUN mkdir -p /state && chown node:node /state
 USER node
 EXPOSE 3000
