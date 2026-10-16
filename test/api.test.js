@@ -33,3 +33,18 @@ test('Integration diagnostics distinguish simulator, OAuth and unverified Sensor
 });
 
 test('OAuth errors distinguish invalid client and malformed authorization',async()=>fixture(async base=>{const url=new URL(base+'/oauth2/authorize');url.searchParams.set('client_id','wrong');url.searchParams.set('response_type','code');url.searchParams.set('redirect_uri','https://example.org/callback');const invalid=await fetch(url);assert.equal(invalid.status,401);assert.deepEqual(await invalid.json(),{error:'invalid_client',error_description:'Unknown OAuth client ID'});url.searchParams.set('client_id','sim-client');url.searchParams.set('response_type','token');const malformed=await fetch(url);assert.equal(malformed.status,400);assert.equal((await malformed.json()).error,'unsupported_response_type');}));
+
+test('Only OAuth-authorized clients may report integration activity',async()=>fixture(async base=>{
+  const body={connectionId:'sim-01',operation:'collection',assets:1,observations:6};
+  const send=(authorization,payload)=>fetch(base+'/api/integration-report',{method:'POST',headers:{'content-type':'application/json',...(authorization?{authorization}:{})},body:JSON.stringify(payload)});
+  assert.equal((await send(null,body)).status,401);
+  const token=await oauth(base,'read_thermostat');
+  const authorization='Bearer '+token.access_token;
+  assert.equal((await send(authorization,{...body,connectionId:'sim-02'})).status,400);
+  assert.equal((await send(authorization,{...body,observations:-1})).status,400);
+  assert.equal((await send(authorization,body)).status,200);
+  const status=await (await fetch(base+'/sim/integration-status',{headers:{'x-sim-token':'admin'}})).json();
+  assert.equal(status.sensorSphere.status,'client_reported');
+  assert.equal(status.sensorSphere.observations,6);
+  assert.equal(status.sensorSphere.source,'oauth_authenticated_client');
+}));

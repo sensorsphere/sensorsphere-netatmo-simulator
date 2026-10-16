@@ -15,7 +15,9 @@ async function refreshIntegrationStatus(){
     const o=info.oauth;
     setStatus('oauth-status',o.activeAccessTokens>0?'Active access tokens':o.pendingAuthorizationCodes>0?'Authorization pending':'No active access tokens',o.activeAccessTokens>0?'ok':'warning');
     $('oauth-details').textContent=`Access: ${o.activeAccessTokens} · Refresh: ${o.refreshTokens} · Pending codes: ${o.pendingAuthorizationCodes}`;
-    setStatus('sensorsphere-status','Not verifiable here','warning');
+    const report=info.sensorSphere;
+    setStatus('sensorsphere-status',report?.status==='client_reported'?'Authenticated client activity':'Not verifiable here',report?.status==='client_reported'?'ok':'warning');
+    $('sensorsphere-details').textContent=report?.status==='client_reported' ? ($('ui-language').value==='fr'?'Activité déclarée par un client OAuth · Dernière collecte : ':'OAuth client report · Last collection: ')+(report.lastCollection?new Date(report.lastCollection).toLocaleString():($('ui-language').value==='fr'?'Jamais':'Never'))+' · '+(report.observations??0)+' observations' : ($('ui-language').value==='fr'?'Vérifier dans SensorSphere Administration → Connexions Netatmo':'Verify in SensorSphere Administration → Netatmo Connections');
   }catch(e){
     setStatus('sim-api-status','Unavailable','error');
     setStatus('oauth-status','Unavailable','error');
@@ -111,7 +113,7 @@ function localize(){
  }
 }
 translations['● Paused']='● En pause';translations['● Running']='● En marche';
-translations['Outdoor']='Extérieure';translations['↪ Go to day/time']='↪ Aller au jour/heure';translations['Accelerated heat loss']='Perte de chaleur accélérée';translations['Communication with thermostat']='Communication avec le thermostat';translations['Prevent heating despite demand']='Empêche le chauffage malgré la demande';translations['Adjusting setpoint selects manual override; click Apply to save.']='Modifier la consigne sélectionne le mode manuel ; cliquer sur Appliquer pour enregistrer.';translations['Current virtual day and time']='Jour et heure virtuels actuels';translations['Go to day and time']='Aller au jour et à l’heure';
+translations['Authenticated client activity']='Activité d’un client authentifié';translations['Outdoor']='Extérieure';translations['↪ Go to day/time']='↪ Aller au jour/heure';translations['Accelerated heat loss']='Perte de chaleur accélérée';translations['Communication with thermostat']='Communication avec le thermostat';translations['Prevent heating despite demand']='Empêche le chauffage malgré la demande';translations['Adjusting setpoint selects manual override; click Apply to save.']='Modifier la consigne sélectionne le mode manuel ; cliquer sur Appliquer pour enregistrer.';translations['Current virtual day and time']='Jour et heure virtuels actuels';translations['Go to day and time']='Aller au jour et à l’heure';
 const selectedLanguage=localStorage.getItem(localeKey);
 $('ui-language').value=selectedLanguage==='fr'?'fr':'en';
 $('ui-language').addEventListener('change',()=>{localStorage.setItem(localeKey,$('ui-language').value);localize();});
