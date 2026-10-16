@@ -48,3 +48,33 @@ test('Only OAuth-authorized clients may report integration activity',async()=>fi
   assert.equal(status.sensorSphere.observations,6);
   assert.equal(status.sensorSphere.source,'oauth_authenticated_client');
 }));
+
+test('Automatic clock speed persists across process restart, including pause',async()=>{
+  const {mkdtemp,readFile,rm}=await import('node:fs/promises');
+  const {tmpdir}=await import('node:os');
+  const {join}=await import('node:path');
+  const directory=await mkdtemp(join(tmpdir(),'netatmo-clock-'));
+  const previous=process.env.SIM_OAUTH_STATE_FILE;
+  process.env.SIM_OAUTH_STATE_FILE=join(directory,'oauth.json');
+  async function appRun(fn){
+    const server=http.createServer(createApp({adminToken:'admin'}).handler);
+    await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+    const url='http://127.0.0.1:'+server.address().port;
+    try{await fn(url);}finally{await new Promise(resolve=>server.close(resolve));}
+  }
+  const current=async url=>(await (await fetch(url+'/sim/clock',{headers:{'x-sim-token':'admin'}})).json());
+  const change=async(url,speed)=>fetch(url+'/sim/clock',{method:'POST',headers:{'content-type':'application/json','x-sim-token':'admin'},body:JSON.stringify({speed})});
+  try{
+    await appRun(async url=>{assert.equal((await change(url,60)).status,200);assert.equal((await current(url)).speed,60);});
+    assert.equal(JSON.parse(await readFile(process.env.SIM_OAUTH_STATE_FILE,'utf8')).clockSpeed,60);
+    await appRun(async url=>{
+      for(let i=0;i<30&&(await current(url)).speed!==60;i++)await new Promise(resolve=>setTimeout(resolve,10));
+      assert.deepEqual(await current(url),{running:true,speed:60});
+      assert.equal((await change(url,0)).status,200);
+    });
+    await appRun(async url=>{
+      await new Promise(resolve=>setTimeout(resolve,20));
+      assert.deepEqual(await current(url),{running:false,speed:0});
+    });
+  }finally{if(previous===undefined)delete process.env.SIM_OAUTH_STATE_FILE;else process.env.SIM_OAUTH_STATE_FILE=previous;await rm(directory,{recursive:true,force:true});}
+});
