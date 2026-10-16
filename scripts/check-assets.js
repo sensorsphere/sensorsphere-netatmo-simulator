@@ -4,3 +4,6 @@ const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
 if(!css.trimStart().startsWith(':root')||css.includes('<!doctype')||css.length<4000||!css.includes('.integration-status'))throw Error('Invalid CSS: appears overwritten or incomplete');
 if(!html.trimStart().startsWith('<!doctype html>')||!html.includes('/ui/style.css'))throw Error('Invalid HTML');
 console.log('Static assets validated');
+
+for(const id of ['temperature','setpoint','outside']){if(!html.includes('class="value '+id+'-color" id="'+id+'"'))throw Error('Missing temperature card color class: '+id);}
+if(/<[^>]*\bclass="[^"]*"[^>]*\bclass="/.test(html))throw Error('Duplicate class attribute');
