@@ -13,7 +13,7 @@ async function refreshIntegrationStatus(){
     setStatus('netatmo-api-status',fault==='none'?'Ready':'Fault: '+fault,fault==='none'?'ok':'error');
     $('netatmo-api-details').textContent=`Fault mode: ${fault} · API requests: ${info.netatmoApi.requestCount}`;
     const o=info.oauth;
-    setStatus('oauth-status',o.activeAccessTokens>0?'Active access tokens':o.pendingAuthorizationCodes>0?'Authorization pending':'No active access tokens',o.activeAccessTokens>0?'ok':'warning');
+    setStatus('oauth-status',o.activeAccessTokens>0?'Active access tokens':o.refreshTokens>0?'Refresh credentials available':o.pendingAuthorizationCodes>0?'Authorization pending':'Authorization required',o.activeAccessTokens>0?'ok':o.refreshTokens>0?'ok':'warning');
     $('oauth-details').textContent=`Access: ${o.activeAccessTokens} · Refresh: ${o.refreshTokens} · Pending codes: ${o.pendingAuthorizationCodes}`;
     const report=info.sensorSphere;
     setStatus('sensorsphere-status',report?.status==='client_reported'?'Authenticated client activity':'Not verifiable here',report?.status==='client_reported'?'ok':'warning');
@@ -113,7 +113,7 @@ function localize(){
  }
 }
 translations['● Paused']='● En pause';translations['● Running']='● En marche';
-translations['Authenticated client activity']='Activité d’un client authentifié';translations['Outdoor']='Extérieure';translations['↪ Go to day/time']='↪ Aller au jour/heure';translations['Accelerated heat loss']='Perte de chaleur accélérée';translations['Communication with thermostat']='Communication avec le thermostat';translations['Prevent heating despite demand']='Empêche le chauffage malgré la demande';translations['Adjusting setpoint selects manual override; click Apply to save.']='Modifier la consigne sélectionne le mode manuel ; cliquer sur Appliquer pour enregistrer.';translations['Current virtual day and time']='Jour et heure virtuels actuels';translations['Go to day and time']='Aller au jour et à l’heure';
+translations['Authenticated client activity']='Activité d’un client authentifié';translations['Refresh credentials available']='Renouvellement OAuth disponible';translations['Authorization required']='Autorisation OAuth nécessaire';translations['Outdoor']='Extérieure';translations['↪ Go to day/time']='↪ Aller au jour/heure';translations['Accelerated heat loss']='Perte de chaleur accélérée';translations['Communication with thermostat']='Communication avec le thermostat';translations['Prevent heating despite demand']='Empêche le chauffage malgré la demande';translations['Adjusting setpoint selects manual override; click Apply to save.']='Modifier la consigne sélectionne le mode manuel ; cliquer sur Appliquer pour enregistrer.';translations['Current virtual day and time']='Jour et heure virtuels actuels';translations['Go to day and time']='Aller au jour et à l’heure';
 const selectedLanguage=localStorage.getItem(localeKey);
 $('ui-language').value=selectedLanguage==='fr'?'fr':'en';
 $('ui-language').addEventListener('change',()=>{localStorage.setItem(localeKey,$('ui-language').value);localize();});
