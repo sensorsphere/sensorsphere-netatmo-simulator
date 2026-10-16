@@ -3,6 +3,7 @@ services:
     build: .
     image: sensorsphere-netatmo-simulator:${SIM_VERSION:-latest}
     restart: unless-stopped
+    user: "${SIM_UID:-1001}:${SIM_GID:-1001}"
     ports:
       - "127.0.0.1:${WEB_PORT:-8090}:3000"
       - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-8090}:3000"
