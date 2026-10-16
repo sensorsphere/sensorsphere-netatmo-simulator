@@ -6,9 +6,12 @@ services:
     ports:
       - "127.0.0.1:${WEB_PORT:-8090}:3000"
       - "${WEB_BIND_ADDRESS:-0.0.0.0}:${WEB_PORT:-8090}:3000"
+    volumes:
+      - ${SIM_STATE_DIR:-./data}:/state
     environment:
       PORT: "3000"
       SIM_INSTANCE_ID: "${SIM_INSTANCE_ID:-01}"
       SIM_CLIENT_ID: "${SIM_CLIENT_ID:-sim-client}"
       SIM_CLIENT_SECRET: "${SIM_CLIENT_SECRET:-sim-secret}"
+      SIM_OAUTH_STATE_FILE: /state/oauth.json
       SIM_ADMIN_TOKEN: "${SIM_ADMIN_TOKEN:-}"
